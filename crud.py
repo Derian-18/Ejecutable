@@ -51,14 +51,14 @@ def eliminar_alumno(alumno_id):
         )
         return cursor.rowcount > 0
 
-def crear_curso(nombre_curso, prioridad):
+def crear_curso(nombre_curso, creditos):
     with conectar_db() as conn:
         cursor = conn.execute(
             """
-            INSERT INTO Cursos (nombreCurso, prioridad)
+            INSERT INTO Cursos (nombreCurso, creditos)
             VALUES (?, ?)
             """,
-            (nombre_curso, prioridad)
+            (nombre_curso, creditos)
         )
         return cursor.lastrowid
 
@@ -66,7 +66,7 @@ def crear_curso(nombre_curso, prioridad):
 def leer_cursos():
     with conectar_db() as conn:
         cursor = conn.execute(
-            "SELECT id, nombreCurso, prioridad FROM Cursos"
+            "SELECT id, nombreCurso, creditos FROM Cursos"
         )
         return cursor.fetchall()
 
@@ -75,7 +75,7 @@ def leer_curso(curso_id):
     with conectar_db() as conn:
         cursor = conn.execute(
             """
-            SELECT id, nombreCurso, prioridad
+            SELECT id, nombreCurso, creditos
             FROM Cursos
             WHERE id = ?
             """,
@@ -84,15 +84,15 @@ def leer_curso(curso_id):
         return cursor.fetchone()
 
 
-def actualizar_curso(curso_id, nombre_curso, prioridad):
+def actualizar_curso(curso_id, nombre_curso, creditos):
     with conectar_db() as conn:
         cursor = conn.execute(
             """
             UPDATE Cursos
-            SET nombreCurso = ?, prioridad = ?
+            SET nombreCurso = ?, creditos = ?
             WHERE id = ?
             """,
-            (nombre_curso, prioridad, curso_id)
+            (nombre_curso, creditos, curso_id)
         )
         return cursor.rowcount > 0
 
@@ -127,7 +127,7 @@ def leer_inscripciones():
                 a.nombre,
                 a.matricula,
                 c.nombreCurso,
-                c.prioridad
+                c.creditos
             FROM Inscripciones AS i
             JOIN Alumnos AS a ON i.alumno_id = a.id
             JOIN Cursos AS c ON i.curso_id = c.id

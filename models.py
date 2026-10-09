@@ -4,9 +4,9 @@ class Alumnos:
         self.matricula = matricula
 
 class Cursos:
-    def __init__(self, nombreCurso, prioridad):
+    def __init__(self, nombreCurso, creditos):
         self.nombreCurso = nombreCurso
-        self.prioridad = prioridad
+        self.creditos = creditos
 
 class Inscripciones:
     def __init__(self, alumno_id, curso_id):

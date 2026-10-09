@@ -25,7 +25,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS Cursos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombreCurso TEXT NOT NULL,
-                prioridad INTEGER NOT NULL
+                creditos INTEGER NOT NULL CHECK (creditos > 0)
             )
         """)
 

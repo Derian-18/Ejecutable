@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
@@ -365,13 +364,13 @@ class Aplicacion:
     def crear_pestana_cursos(self):
         campos = {
             "nombreCurso": "Nombre del curso",
-            "prioridad": "Prioridad (número)"
+            "creditos": "Créditos (número)"
         }
 
         columnas = {
             "id": "ID",
             "nombreCurso": "Nombre del curso",
-            "prioridad": "Prioridad"
+            "creditos": "Créditos"
         }
 
         (
@@ -437,24 +436,24 @@ class Aplicacion:
         self.curso_entradas["nombreCurso"].delete(0, tk.END)
         self.curso_entradas["nombreCurso"].insert(0, valores[1])
 
-        self.curso_entradas["prioridad"].delete(0, tk.END)
-        self.curso_entradas["prioridad"].insert(0, valores[2])
+        self.curso_entradas["creditos"].delete(0, tk.END)
+        self.curso_entradas["creditos"].insert(0, valores[2])
 
     def crear_curso(self):
         nombre = self.curso_entradas["nombreCurso"].get().strip()
-        prioridad_texto = self.curso_entradas["prioridad"].get().strip()
+        creditos_texto = self.curso_entradas["creditos"].get().strip()
 
-        if not nombre or not prioridad_texto:
+        if not nombre or not creditos_texto:
             messagebox.showwarning(
                 "Campos requeridos",
-                "Ingresa el nombre y la prioridad."
+                "Ingresa el nombre y los créditos."
             )
             return
 
         try:
-            prioridad = int(prioridad_texto)
+            creditos = int(creditos_texto)
 
-            crud.crear_curso(nombre, prioridad)
+            crud.crear_curso(nombre, creditos)
 
             messagebox.showinfo(
                 "Éxito",
@@ -467,7 +466,7 @@ class Aplicacion:
         except ValueError:
             messagebox.showerror(
                 "Dato inválido",
-                "La prioridad debe ser un número entero."
+                "Los créditos deben ser un número entero."
             )
 
         except sqlite3.IntegrityError as error:
@@ -491,22 +490,22 @@ class Aplicacion:
             return
 
         nombre = self.curso_entradas["nombreCurso"].get().strip()
-        prioridad_texto = self.curso_entradas["prioridad"].get().strip()
+        creditos_texto = self.curso_entradas["creditos"].get().strip()
 
-        if not nombre or not prioridad_texto:
+        if not nombre or not creditos_texto:
             messagebox.showwarning(
                 "Campos requeridos",
-                "Ingresa el nombre y la prioridad."
+                "Ingresa el nombre y los créditos."
             )
             return
 
         try:
-            prioridad = int(prioridad_texto)
+            creditos = int(creditos_texto)
 
             actualizado = crud.actualizar_curso(
                 curso_id,
                 nombre,
-                prioridad
+                creditos
             )
 
             if actualizado:
@@ -526,7 +525,7 @@ class Aplicacion:
         except ValueError:
             messagebox.showerror(
                 "Dato inválido",
-                "La prioridad debe ser un número entero."
+                "Los créditos deben ser un número entero."
             )
 
         except sqlite3.IntegrityError as error:
@@ -679,7 +678,7 @@ class Aplicacion:
             "nombre": "Alumno",
             "matricula": "Matrícula",
             "nombreCurso": "Curso",
-            "prioridad": "Prioridad"
+            "creditos": "Créditos"
         }
 
         self.inscripcion_tabla = ttk.Treeview(
@@ -695,7 +694,7 @@ class Aplicacion:
                 text=titulo
             )
 
-            ancho = 100 if columna in ("id", "prioridad") else 180
+            ancho = 100 if columna in ("id", "creditos") else 180
 
             self.inscripcion_tabla.column(
                 columna,
@@ -756,7 +755,7 @@ class Aplicacion:
         self.cursos_por_opcion = {}
         opciones = []
 
-        for curso_id, nombre, prioridad in cursos:
+        for curso_id, nombre, creditos in cursos:
             etiqueta = f"{nombre} - ID: {curso_id}"
 
             self.cursos_por_opcion[etiqueta] = curso_id
