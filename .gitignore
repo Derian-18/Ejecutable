@@ -1,0 +1,6 @@
+mientorno/
+__pycache__/
+*.db
+build/
+dist/
+*.spec
