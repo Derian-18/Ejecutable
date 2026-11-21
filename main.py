@@ -137,6 +137,33 @@ class Aplicacion:
         if hasattr(self, "combo_curso"):
             self.cargar_cursos_combo()
 
+        # Las inscripciones dependen de alumnos y cursos activos
+        if hasattr(self, "inscripcion_tabla"):
+            self.cargar_inscripciones()
+
+    def viendo_eliminados(self, variable, accion):
+        """
+        Si la pestaña está mostrando registros eliminados, avisa
+        que la acción solo aplica a registros activos.
+        """
+        if variable.get():
+            messagebox.showwarning(
+                "Vista de eliminados",
+                f"Estás viendo registros eliminados. Para {accion}, "
+                "desactiva 'Ver eliminados'. Para restaurar, usa 'Recuperar'."
+            )
+            return True
+        return False
+
+    def agregar_check_eliminados(self, contenedor, variable, comando):
+        """Casilla para alternar entre registros activos y eliminados."""
+        ttk.Checkbutton(
+            contenedor,
+            text="Ver eliminados",
+            variable=variable,
+            command=comando
+        ).pack(side="left", padx=15)
+
     # =========================================================
     # ALUMNOS
     # =========================================================
@@ -166,9 +193,16 @@ class Aplicacion:
                 ("Crear", self.crear_alumno),
                 ("Actualizar", self.actualizar_alumno),
                 ("Eliminar", self.eliminar_alumno),
-                ("Limpiar", self.limpiar_alumno),
-                ("Recargar", self.cargar_alumnos)
+                ("Recuperar", self.recuperar_alumno),
+                ("Limpiar", self.limpiar_alumno)
             ]
+        )
+
+        self.ver_eliminados_alumnos = tk.BooleanVar(value=False)
+        self.agregar_check_eliminados(
+            botones,
+            self.ver_eliminados_alumnos,
+            self.cargar_alumnos
         )
 
         self.alumno_tabla.bind(
@@ -182,7 +216,8 @@ class Aplicacion:
         try:
             self.limpiar_tabla(self.alumno_tabla)
 
-            alumnos = crud.leer_alumnos()
+            activo = 0 if self.ver_eliminados_alumnos.get() else 1
+            alumnos = crud.leer_alumnos(activo)
 
             for alumno in alumnos:
                 self.alumno_tabla.insert(
@@ -254,6 +289,9 @@ class Aplicacion:
             )
 
     def actualizar_alumno(self):
+        if self.viendo_eliminados(self.ver_eliminados_alumnos, "actualizar"):
+            return
+
         alumno_id = self.obtener_id_seleccionado(
             self.alumno_tabla
         )
@@ -305,6 +343,10 @@ class Aplicacion:
             )
 
     def eliminar_alumno(self):
+        """Eliminación lógica: activo = 0 (no se borra el registro)."""
+        if self.viendo_eliminados(self.ver_eliminados_alumnos, "eliminar"):
+            return
+
         alumno_id = self.obtener_id_seleccionado(
             self.alumno_tabla
         )
@@ -314,7 +356,8 @@ class Aplicacion:
 
         confirmar = messagebox.askyesno(
             "Confirmar eliminación",
-            "¿Deseas eliminar este alumno?"
+            "¿Deseas eliminar este alumno?\n"
+            "Podrás recuperarlo después desde 'Ver eliminados'."
         )
 
         if not confirmar:
@@ -337,17 +380,47 @@ class Aplicacion:
             self.limpiar_alumno()
             self.cargar_alumnos()
 
-        except sqlite3.IntegrityError:
-            messagebox.showerror(
-                "No se puede eliminar",
-                "Este alumno tiene inscripciones registradas. "
-                "Elimina primero sus inscripciones."
-            )
-
         except sqlite3.Error as error:
             messagebox.showerror(
                 "Error",
                 f"No se pudo eliminar el alumno:\n{error}"
+            )
+
+    def recuperar_alumno(self):
+        """Recuperación: activo = 1."""
+        if not self.ver_eliminados_alumnos.get():
+            messagebox.showinfo(
+                "Recuperar",
+                "Activa 'Ver eliminados' y selecciona el alumno a recuperar."
+            )
+            return
+
+        alumno_id = self.obtener_id_seleccionado(
+            self.alumno_tabla
+        )
+
+        if alumno_id is None:
+            return
+
+        try:
+            if crud.recuperar_alumno(alumno_id):
+                messagebox.showinfo(
+                    "Éxito",
+                    "Alumno recuperado correctamente."
+                )
+            else:
+                messagebox.showwarning(
+                    "Aviso",
+                    "No se encontró el alumno eliminado."
+                )
+
+            self.limpiar_alumno()
+            self.cargar_alumnos()
+
+        except sqlite3.Error as error:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo recuperar el alumno:\n{error}"
             )
 
     def limpiar_alumno(self):
@@ -386,9 +459,16 @@ class Aplicacion:
                 ("Crear", self.crear_curso),
                 ("Actualizar", self.actualizar_curso),
                 ("Eliminar", self.eliminar_curso),
-                ("Limpiar", self.limpiar_curso),
-                ("Recargar", self.cargar_cursos)
+                ("Recuperar", self.recuperar_curso),
+                ("Limpiar", self.limpiar_curso)
             ]
+        )
+
+        self.ver_eliminados_cursos = tk.BooleanVar(value=False)
+        self.agregar_check_eliminados(
+            botones,
+            self.ver_eliminados_cursos,
+            self.cargar_cursos
         )
 
         self.curso_tabla.bind(
@@ -402,7 +482,8 @@ class Aplicacion:
         try:
             self.limpiar_tabla(self.curso_tabla)
 
-            cursos = crud.leer_cursos()
+            activo = 0 if self.ver_eliminados_cursos.get() else 1
+            cursos = crud.leer_cursos(activo)
 
             for curso in cursos:
                 self.curso_tabla.insert(
@@ -482,6 +563,9 @@ class Aplicacion:
             )
 
     def actualizar_curso(self):
+        if self.viendo_eliminados(self.ver_eliminados_cursos, "actualizar"):
+            return
+
         curso_id = self.obtener_id_seleccionado(
             self.curso_tabla
         )
@@ -541,6 +625,10 @@ class Aplicacion:
             )
 
     def eliminar_curso(self):
+        """Eliminación lógica: activo = 0 (no se borra el registro)."""
+        if self.viendo_eliminados(self.ver_eliminados_cursos, "eliminar"):
+            return
+
         curso_id = self.obtener_id_seleccionado(
             self.curso_tabla
         )
@@ -550,7 +638,8 @@ class Aplicacion:
 
         confirmar = messagebox.askyesno(
             "Confirmar eliminación",
-            "¿Deseas eliminar este curso?"
+            "¿Deseas eliminar este curso?\n"
+            "Podrás recuperarlo después desde 'Ver eliminados'."
         )
 
         if not confirmar:
@@ -573,17 +662,47 @@ class Aplicacion:
             self.limpiar_curso()
             self.cargar_cursos()
 
-        except sqlite3.IntegrityError:
-            messagebox.showerror(
-                "No se puede eliminar",
-                "Este curso tiene inscripciones registradas. "
-                "Elimina primero sus inscripciones."
-            )
-
         except sqlite3.Error as error:
             messagebox.showerror(
                 "Error",
                 f"No se pudo eliminar el curso:\n{error}"
+            )
+
+    def recuperar_curso(self):
+        """Recuperación: activo = 1."""
+        if not self.ver_eliminados_cursos.get():
+            messagebox.showinfo(
+                "Recuperar",
+                "Activa 'Ver eliminados' y selecciona el curso a recuperar."
+            )
+            return
+
+        curso_id = self.obtener_id_seleccionado(
+            self.curso_tabla
+        )
+
+        if curso_id is None:
+            return
+
+        try:
+            if crud.recuperar_curso(curso_id):
+                messagebox.showinfo(
+                    "Éxito",
+                    "Curso recuperado correctamente."
+                )
+            else:
+                messagebox.showwarning(
+                    "Aviso",
+                    "No se encontró el curso eliminado."
+                )
+
+            self.limpiar_curso()
+            self.cargar_cursos()
+
+        except sqlite3.Error as error:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo recuperar el curso:\n{error}"
             )
 
     def limpiar_curso(self):
@@ -664,9 +783,16 @@ class Aplicacion:
                 ("Inscribir", self.crear_inscripcion),
                 ("Actualizar", self.actualizar_inscripcion),
                 ("Eliminar", self.eliminar_inscripcion),
-                ("Limpiar", self.limpiar_inscripcion),
-                ("Recargar", self.cargar_inscripciones)
+                ("Recuperar", self.recuperar_inscripcion),
+                ("Limpiar", self.limpiar_inscripcion)
             ]
+        )
+
+        self.ver_eliminados_inscripciones = tk.BooleanVar(value=False)
+        self.agregar_check_eliminados(
+            botones,
+            self.ver_eliminados_inscripciones,
+            self.cargar_inscripciones
         )
 
         # Tabla de inscripciones
@@ -778,7 +904,8 @@ class Aplicacion:
 
             self.limpiar_tabla(self.inscripcion_tabla)
 
-            inscripciones = crud.leer_inscripciones()
+            activo = 0 if self.ver_eliminados_inscripciones.get() else 1
+            inscripciones = crud.leer_inscripciones(activo)
 
             for inscripcion in inscripciones:
                 self.inscripcion_tabla.insert(
@@ -828,7 +955,8 @@ class Aplicacion:
         except sqlite3.IntegrityError:
             messagebox.showerror(
                 "No se pudo inscribir",
-                "Esta inscripción ya existe o los registros "
+                "Esta inscripción ya existe (puede estar en 'Ver eliminados': "
+                "recupérala desde ahí) o los registros "
                 "seleccionados ya no están disponibles."
             )
 
@@ -892,6 +1020,11 @@ class Aplicacion:
         )
 
     def actualizar_inscripcion(self):
+        if self.viendo_eliminados(
+            self.ver_eliminados_inscripciones, "actualizar"
+        ):
+            return
+
         inscripcion_id = self.obtener_id_seleccionado(
             self.inscripcion_tabla
         )
@@ -954,6 +1087,12 @@ class Aplicacion:
             )
 
     def eliminar_inscripcion(self):
+        """Eliminación lógica: activo = 0 (no se borra el registro)."""
+        if self.viendo_eliminados(
+            self.ver_eliminados_inscripciones, "eliminar"
+        ):
+            return
+
         inscripcion_id = self.obtener_id_seleccionado(
             self.inscripcion_tabla
         )
@@ -963,7 +1102,8 @@ class Aplicacion:
 
         confirmar = messagebox.askyesno(
             "Confirmar eliminación",
-            "¿Deseas eliminar esta inscripción?"
+            "¿Deseas eliminar esta inscripción?\n"
+            "Podrás recuperarla después desde 'Ver eliminados'."
         )
 
         if not confirmar:
@@ -990,6 +1130,48 @@ class Aplicacion:
             messagebox.showerror(
                 "Error",
                 f"No se pudo eliminar la inscripción:\n{error}"
+            )
+
+    def recuperar_inscripcion(self):
+        """Recuperación: activo = 1."""
+        if not self.ver_eliminados_inscripciones.get():
+            messagebox.showinfo(
+                "Recuperar",
+                "Activa 'Ver eliminados' y selecciona la inscripción "
+                "a recuperar."
+            )
+            return
+
+        inscripcion_id = self.obtener_id_seleccionado(
+            self.inscripcion_tabla
+        )
+
+        if inscripcion_id is None:
+            return
+
+        try:
+            if crud.recuperar_inscripcion(inscripcion_id):
+                messagebox.showinfo(
+                    "Éxito",
+                    "Inscripción recuperada correctamente."
+                )
+            else:
+                messagebox.showwarning(
+                    "Aviso",
+                    "No se encontró la inscripción eliminada."
+                )
+
+            self.limpiar_inscripcion()
+            self.cargar_inscripciones()
+
+        except ValueError as error:
+            # El alumno o el curso siguen eliminados
+            messagebox.showwarning("No se puede recuperar", str(error))
+
+        except sqlite3.Error as error:
+            messagebox.showerror(
+                "Error",
+                f"No se pudo recuperar la inscripción:\n{error}"
             )
 
     def limpiar_inscripcion(self):
